@@ -318,8 +318,6 @@ You should see:
 Bolt app is running!
 ```
 
-![Running App](Screenshots/running_app_locally.png)
-
 ---
 
 #### Step 6: Test in Slack
