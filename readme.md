@@ -2,7 +2,7 @@
 
 A powerful Slack bot that runs Splunk saved searches and SPL queries directly from Slack. Features 28 commands across 6 categories with admin controls, audit logging, and export capabilities.
 
-![Slack Output](Screenshots/slack_app_output.png)
+![Slack Output](Screenshots/slack_bot_output.png)
 
 **Key Features:**
 - 🔍 Run saved searches and raw SPL queries from Slack
@@ -100,6 +100,8 @@ Socket Mode allows your bot to receive events without exposing a public URL.
 
 4. Click **"Save Changes"**
 
+![Event Subscriptions](Screenshots/event_subscription_slack.png)
+
 ---
 
 #### Step 5: Install App to Workspace
@@ -143,7 +145,7 @@ SLACK_SIGNING_SECRET=your-signing-secret
 
 ---
 
-#### Step 2: Install Splunk on WSL (Ubuntu)
+#### Step 2: Install Splunk on System (Ubuntu)
 
 ```bash
 # Update packages
@@ -168,15 +170,13 @@ sudo /opt/splunk/bin/splunk enable boot-start
 
 #### Step 3: Access Splunk Web UI
 
-1. Get your WSL IP:
+1. Get your Host IP:
 ```bash
 hostname -I
 ```
 
-2. Open browser: `http://<WSL_IP>:8000`
+2. Open browser: `http://<Host_IP>:8000`
 3. Login with admin credentials you set during installation
-
-![Splunk Running](Screenshots/splunk_running_wsl_ubuntuip.png)
 
 ---
 
@@ -327,21 +327,16 @@ Bolt app is running!
 1. Open Slack
 2. Invite bot to a channel: `/invite @Splunk Query Bot`
 3. Type: `!help`
-
-![Slack Command](Screenshots/slack_app_cmd.png)
-
 4. Run your saved search:
 ```
 !search-alert demo_search
 ```
 
-![Search Output](Screenshots/slack_search_output.png)
+![Bot Output](Screenshots/slack_bot_output.png)
 
 ---
 
-#### ✅ Connection Successful!
-
-![Connection Successful](Screenshots/checking%20connection%20successful.png)
+#### ✅ Setup Complete!
 
 ---
 
@@ -673,7 +668,7 @@ Docs: Documentation only
 | Screenshot | Description |
 |------------|-------------|
 | ![Dashboard](Screenshots/splunk_dashboard.png) | Splunk Dashboard |
-| ![Output](Screenshots/slack_app_output.png) | Bot Output in Slack |
+| ![Output](Screenshots/slack_bot_output.png) | Bot Output in Slack |
 
 ---
 
