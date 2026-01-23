@@ -2,8 +2,10 @@
 
 A powerful Slack bot that runs Splunk saved searches and SPL queries directly from Slack. Features 28 commands across 6 categories with admin controls, audit logging, and export capabilities.
 
+![Slack Output](Screenshots/slack_app_output.png)
+
 **Key Features:**
-- 🔍 Run saved searches and raw SPL queries
+- 🔍 Run saved searches and raw SPL queries from Slack
 - 👥 Admin-only commands with whitelist security
 - 📊 Audit logging with JSON/CSV/TXT export
 - ⚙️ Interactive setup wizard
@@ -13,7 +15,10 @@ A powerful Slack bot that runs Splunk saved searches and SPL queries directly fr
 
 ## 📋 Table of Contents
 
-1. [Quick Start](#-quick-start)
+1. [Complete Setup Guide](#-complete-setup-guide)
+   - [Part 1: Slack App Setup](#part-1-slack-app-setup)
+   - [Part 2: Splunk Setup (WSL)](#part-2-splunk-setup-wsl)
+   - [Part 3: Bot Installation](#part-3-bot-installation)
 2. [Commands](#-commands)
 3. [Admin Setup](#-admin-setup)
 4. [Configuration](#-configuration)
@@ -23,32 +28,320 @@ A powerful Slack bot that runs Splunk saved searches and SPL queries directly fr
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Complete Setup Guide
 
-### 1. Install Dependencies
+This guide walks you through the complete setup from scratch.
+
+---
+
+### Part 1: Slack App Setup
+
+#### Step 1: Create a New Slack App
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps)
+2. Click **"Create New App"**
+
+![Slack App Homepage](Screenshots/slack_app_homepage.png)
+
+3. Choose **"From scratch"**
+4. Enter app name: `Splunk Query Bot`
+5. Select your workspace
+6. Click **"Create App"**
+
+![Create Slack App](Screenshots/slack_app_create.png)
+
+---
+
+#### Step 2: Enable Socket Mode
+
+Socket Mode allows your bot to receive events without exposing a public URL.
+
+1. Go to **Settings → Socket Mode**
+2. Toggle **"Enable Socket Mode"** ON
+3. Create an App-Level Token:
+   - Token Name: `socket-token`
+   - Scope: `connections:write`
+4. Click **"Generate"**
+5. **Copy the `xapp-...` token** (this is your `SLACK_APP_TOKEN`)
+
+![Socket Mode](Screenshots/slackapp_socket_mode.png)
+
+---
+
+#### Step 3: Set Bot Permissions
+
+1. Go to **OAuth & Permissions**
+2. Scroll to **"Scopes"** section
+3. Under **"Bot Token Scopes"**, add these permissions:
+
+| Scope | Purpose |
+|-------|---------|
+| `chat:write` | Send messages |
+| `channels:history` | Read channel messages |
+| `im:history` | Read direct messages |
+| `app_mentions:read` | Respond to @mentions |
+| `users:read` | Get user info |
+
+![Bot Permissions](Screenshots/slackapp_bot_permission.png)
+
+---
+
+#### Step 4: Enable Event Subscriptions
+
+1. Go to **Event Subscriptions**
+2. Toggle **"Enable Events"** ON
+3. Under **"Subscribe to bot events"**, add:
+
+| Event | Purpose |
+|-------|---------|
+| `message.channels` | Listen to channel messages |
+| `message.im` | Listen to direct messages |
+| `app_mention` | Respond when @mentioned |
+
+4. Click **"Save Changes"**
+
+---
+
+#### Step 5: Install App to Workspace
+
+1. Go to **OAuth & Permissions**
+2. Click **"Install to Workspace"**
+3. Review permissions and click **"Allow"**
+4. **Copy the `xoxb-...` token** (this is your `SLACK_BOT_TOKEN`)
+
+![Install Bot](Screenshots/slackapp_bot_install.png)
+
+---
+
+#### Step 6: Get Signing Secret
+
+1. Go to **Basic Information**
+2. Scroll to **"App Credentials"**
+3. **Copy the "Signing Secret"** (this is your `SLACK_SIGNING_SECRET`)
+
+---
+
+#### ✅ Slack Tokens Collected
+
+You should now have:
+```
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_APP_TOKEN=xapp-your-app-token
+SLACK_SIGNING_SECRET=your-signing-secret
+```
+
+---
+
+### Part 2: Splunk Setup (WSL)
+
+#### Step 1: Download Splunk Enterprise
+
+1. Go to [splunk.com/download](https://www.splunk.com/en_us/download.html)
+2. Download **Splunk Enterprise** for Linux (.deb or .tgz)
+
+![Splunk Download](Screenshots/splunk_download.png)
+
+---
+
+#### Step 2: Install Splunk on WSL (Ubuntu)
+
+```bash
+# Update packages
+sudo apt update && sudo apt upgrade -y
+
+# Install Splunk (if .deb)
+sudo dpkg -i splunk-*.deb
+
+# Or extract .tgz
+tar -xvzf splunk-*.tgz -C /opt
+
+# Start Splunk
+sudo /opt/splunk/bin/splunk start --accept-license
+
+# Enable boot start
+sudo /opt/splunk/bin/splunk enable boot-start
+```
+
+![Splunk Setup](Screenshots/splunk_setup.png)
+
+---
+
+#### Step 3: Access Splunk Web UI
+
+1. Get your WSL IP:
+```bash
+hostname -I
+```
+
+2. Open browser: `http://<WSL_IP>:8000`
+3. Login with admin credentials you set during installation
+
+![Splunk Running](Screenshots/splunk_running_wsl_ubuntuip.png)
+
+---
+
+#### Step 4: Add Data Source (Log Ingestion)
+
+1. Go to **Settings → Add Data**
+2. Choose **"Monitor"** for local files
+3. Select log directory (e.g., `/var/log`)
+4. Set Source Type and Index
+5. Click **"Save"**
+
+![Data Source](Screenshots/splunk_data_source.png)
+![Data Source 2](Screenshots/splunk_data_source2.png)
+
+For Linux system logs:
+
+![Linux Log Setup](Screenshots/splunk_linux_log_setup.png)
+
+---
+
+#### Step 5: Create a Saved Search (Report)
+
+1. Go to **Search & Reporting**
+2. Run a search query:
+```spl
+index=main | head 100
+```
+3. Click **"Save As → Report"**
+4. Name it (e.g., `demo_search`)
+5. Click **"Save"**
+
+![Splunk Search](Screenshots/splunk_search_dasboard.png)
+![Saved Search](Screenshots/splunk_saved_search.png)
+![Demo Search](Screenshots/saved_demo_search.png)
+
+---
+
+#### Step 6: Create API Token
+
+1. Go to **Settings → Tokens** (or **Settings → Users → your_user → Edit → Tokens**)
+2. Click **"New Token"**
+3. Set:
+   - Token Name: `slack-bot-token`
+   - Audience: Leave default
+   - Expiration: Set as needed
+4. Click **"Create"**
+5. **Copy the token** (this is your `SPLUNK_TOKEN`)
+
+![Splunk Token](Screenshots/splunk_token.png)
+
+---
+
+#### ✅ Splunk Config Collected
+
+You should now have:
+```
+SPLUNK_BASE_URL=http://<WSL_IP>:8089
+SPLUNK_TOKEN=Bearer your-splunk-token
+```
+
+---
+
+### Part 3: Bot Installation
+
+#### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/cybraman/splunk-slack-bot.git
+cd splunk-slack-bot
+```
+
+---
+
+#### Step 2: Create Virtual Environment
+
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
+
+---
+
+#### Step 3: Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure `.env`
-```env
-SLACK_BOT_TOKEN=xoxb-your-token
-SLACK_APP_TOKEN=xapp-your-token
-SLACK_SIGNING_SECRET=your-secret
-SPLUNK_BASE_URL=https://your-splunk:8089
-SPLUNK_TOKEN=Bearer your-token
-ADMIN_USER_IDS=U0A9PJVP8BU
+Required packages:
+- `slack-bolt` - Slack Bot framework
+- `python-dotenv` - Environment variables
+- `requests` - HTTP client for Splunk API
+
+---
+
+#### Step 4: Configure Environment
+
+1. Copy the example file:
+```bash
+cp .env.example .env
 ```
 
-### 3. Run
+2. Edit `.env` with your tokens:
+```env
+# Slack Configuration
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_APP_TOKEN=xapp-your-app-token
+SLACK_SIGNING_SECRET=your-signing-secret
+
+# Splunk Configuration
+SPLUNK_BASE_URL=http://172.x.x.x:8089
+SPLUNK_TOKEN=Bearer your-splunk-token
+SPLUNK_VERIFY_TLS=false
+
+# Admin Configuration
+ADMIN_USER_IDS=U0A9PJVP8BU
+ENABLE_SPL_QUERY=true
+```
+
+---
+
+#### Step 5: Run the Bot
+
 ```bash
 python app.py
 ```
 
-### 4. Test in Slack
+You should see:
 ```
-!help
+⚡️ Splunk Query Bot starting...
+📊 Admins configured: 1
+🔐 SPL Query enabled: True
+✅ Ready! Use !help to see all commands
+Bolt app is running!
 ```
+
+![Running App](Screenshots/running_app_locally.png)
+
+---
+
+#### Step 6: Test in Slack
+
+1. Open Slack
+2. Invite bot to a channel: `/invite @Splunk Query Bot`
+3. Type: `!help`
+
+![Slack Command](Screenshots/slack_app_cmd.png)
+
+4. Run your saved search:
+```
+!search-alert demo_search
+```
+
+![Search Output](Screenshots/slack_search_output.png)
+
+---
+
+#### ✅ Connection Successful!
+
+![Connection Successful](Screenshots/checking%20connection%20successful.png)
 
 ---
 
@@ -157,14 +450,6 @@ SPLUNK_VERIFY_TLS=false           # Set true for production
 RESULT_LIMIT=5                    # Max results per query
 ```
 
-### Slack App Setup
-1. Go to [api.slack.com/apps](https://api.slack.com/apps)
-2. Create new app → From scratch
-3. Enable **Socket Mode** (Settings → Socket Mode)
-4. Add scopes: `chat:write`, `channels:history`, `im:history`, `app_mentions:read`
-5. Install to workspace
-6. Copy tokens to `.env`
-
 ---
 
 ## 📊 Logging & Audit
@@ -233,6 +518,8 @@ SPLUNK_TOKEN=Bearer your-token
 SPLUNK_VERIFY_TLS=false  # for self-signed certs
 ```
 
+![API Troubleshooting](Screenshots/api_endpoint_troubleshooting.png)
+
 ### Module Not Found
 ```bash
 # Activate virtual environment
@@ -260,9 +547,11 @@ pip install -r requirements.txt
 ├── slack_handlers.py    # Message parsing
 ├── structured_logger.py # Audit logging
 ├── .env                 # Configuration (gitignored)
+├── .env.example         # Config template
 ├── requirements.txt     # Dependencies
 ├── bot.log              # Debug logs
-└── bot_audit.log        # Audit trail (JSON)
+├── bot_audit.log        # Audit trail (JSON)
+└── Screenshots/         # Setup guide images
 ```
 
 ---
@@ -318,8 +607,8 @@ python app.py
 
 ```bash
 # 1. Clone repository
-git clone <repo-url>
-cd "Slack Bot + Splunk Saved Search Runner"
+git clone https://github.com/cybraman/splunk-slack-bot.git
+cd splunk-slack-bot
 
 # 2. Create virtual environment
 python -m venv venv
@@ -339,42 +628,12 @@ cp .env.example .env
 # 6. Configure .env with your test credentials
 ```
 
-### Project Structure
-
-```
-├── app.py               # Main bot (message handlers, commands)
-├── admin_manager.py     # Admin authorization logic
-├── splunk_client.py     # Splunk REST API client
-├── slack_handlers.py    # Message parsing utilities
-├── structured_logger.py # Audit logging system
-├── .env                 # Configuration (gitignored)
-├── .env.example         # Template for .env
-└── requirements.txt     # Python dependencies
-```
-
 ### Code Style
 
 - **Python 3.8+** required
 - Use **type hints** for function parameters
 - Follow **PEP 8** naming conventions
 - Add **docstrings** to all functions
-- Keep functions under 50 lines
-
-```python
-# Example style
-def my_function(user_id: str, limit: int = 10) -> List[dict]:
-    """
-    Brief description of function.
-    
-    Args:
-        user_id: Slack user ID
-        limit: Max results to return
-    
-    Returns:
-        List of result dictionaries
-    """
-    pass
-```
 
 ### Adding New Commands
 
@@ -393,82 +652,9 @@ def handle_my_command(message, say):
     say("✅ Command executed!")
 ```
 
-2. **Add to HELP_TEXT** in `app.py`:
-```python
-HELP_TEXT = """
-...
-• `!my-command` – Description here
-...
-"""
-```
+2. **Add to HELP_TEXT** in `app.py`
 
-3. **Add audit logging** (for admin commands):
-```python
-audit_log.log_action(
-    user_id=user_id,
-    user_name=message.get("username", "unknown"),
-    command="!my-command",
-    channel_id=message.get("channel", ""),
-    channel_name="unknown",
-    action="Did something",
-    result="SUCCESS",
-    changes={"key": "value"}
-)
-```
-
-### Adding Splunk Methods
-
-Add to `splunk_client.py`:
-```python
-def my_splunk_method(self, param: str) -> dict:
-    """Description"""
-    url = f"{self.base_url}/services/your/endpoint"
-    resp = requests.get(
-        url,
-        headers=self._headers(),
-        params={"output_mode": "json"},
-        verify=self.verify_tls,
-        timeout=self.timeout
-    )
-    resp.raise_for_status()
-    return resp.json()
-```
-
-### Testing Changes
-
-```bash
-# 1. Start bot in dev mode
-python app.py
-
-# 2. Test in Slack
-!your-command
-
-# 3. Check logs
-cat bot.log
-cat bot_audit.log
-```
-
-### Submitting Changes
-
-1. **Create feature branch**
-   ```bash
-   git checkout -b feature/my-feature
-   ```
-
-2. **Make changes** following code style
-
-3. **Test thoroughly** in Slack
-
-4. **Commit with clear message**
-   ```bash
-   git add .
-   git commit -m "Add: !my-command for XYZ functionality"
-   ```
-
-5. **Push and create PR**
-   ```bash
-   git push origin feature/my-feature
-   ```
+3. **Add audit logging** (for admin commands)
 
 ### Commit Message Format
 
@@ -480,25 +666,17 @@ Remove: Removed feature
 Docs: Documentation only
 ```
 
-### Environment Variables
+---
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SLACK_BOT_TOKEN` | Yes | Bot token (xoxb-...) |
-| `SLACK_APP_TOKEN` | Yes | App token (xapp-...) |
-| `SLACK_SIGNING_SECRET` | Yes | Signing secret |
-| `SPLUNK_BASE_URL` | Yes | Splunk REST API URL |
-| `SPLUNK_TOKEN` | Yes | Bearer token |
-| `ADMIN_USER_IDS` | No | Comma-separated admin IDs |
-| `ENABLE_SPL_QUERY` | No | Enable raw SPL (default: true) |
-| `SPLUNK_VERIFY_TLS` | No | Verify TLS (default: true) |
+## 📸 Screenshots
 
-### Need Help?
-
-- Check existing code patterns in `app.py`
-- Review `admin_manager.py` for auth logic
-- See `structured_logger.py` for logging examples
+| Screenshot | Description |
+|------------|-------------|
+| ![Dashboard](Screenshots/splunk_dashboard.png) | Splunk Dashboard |
+| ![Output](Screenshots/slack_app_output.png) | Bot Output in Slack |
 
 ---
 
 **Version:** 2.1 | **Commands:** 28 | **Last Updated:** January 24, 2026
+
+**Author:** [cybraman](https://github.com/cybraman)
